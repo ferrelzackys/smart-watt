@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Power AI - Pro Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-900 text-slate-100 font-sans min-h-screen p-4 md:p-8">
+
+    <div class="max-w-7xl mx-auto space-y-6">
+        
+        <header class="flex flex-col md:flex-row justify-between items-start md:items-center bg-gray-800 p-5 rounded-2xl border border-gray-700 shadow-xl">
+            <div>
+                <h1 class="text-2xl font-bold text-blue-400 flex items-center gap-2">
+                    <i class="fa-solid fa-bolt-lightning text-yellow-400"></i> Smart Power AI Dashboard
+                </h1>
+                <p class="text-xs text-gray-400 mt-1">Sistem Monitoring & Decision Engine (Batas 1300W)</p>
+            </div>
+            
+            <div class="mt-4 md:mt-0 flex flex-wrap items-center gap-3">
+                <span id="device-status" class="px-3.5 py-1.5 rounded-full text-xs font-semibold bg-gray-700 text-gray-400 flex items-center gap-1.5">
+                    <i class="fa-solid fa-circle text-gray-500 text-[10px]"></i> Checking Device...
+                </span>
+                <span id="status-badge" class="px-3.5 py-1.5 rounded-full text-xs font-semibold bg-gray-700 text-gray-300">
+                    Connecting...
+                </span>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 shadow-md">
+                <span class="text-xs font-medium text-gray-400">Daya Terakhir</span>
+                <h3 id="val-power" class="text-2xl font-bold text-yellow-400 mt-1">0.0 W</h3>
+            </div>
+
+            <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 shadow-md">
+                <span class="text-xs font-medium text-gray-400">Energi Terpakai Sesi Ini</span>
+                <h3 id="val-energy" class="text-2xl font-bold text-cyan-400 mt-1">0.0000 kWh</h3>
+            </div>
+
+            <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 shadow-md">
+                <span class="text-xs font-medium text-gray-400">Sisa Saldo</span>
+                <h3 id="val-saldo" class="text-2xl font-bold text-emerald-400 mt-1">0.0000 kWh</h3>
+            </div>
+
+            <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 shadow-md">
+                <span class="text-xs font-medium text-gray-400">Tegangan / Arus</span>
+                <h3 id="val-vi" class="text-xl font-bold text-blue-300 mt-1">0V / 0A</h3>
+            </div>
+
+            <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 shadow-md col-span-2 md:col-span-1">
+                <span class="text-xs font-medium text-gray-400">Est. Biaya 30 Hari</span>
+                <h3 id="val-biaya" class="text-xl font-bold text-purple-400 mt-1">Rp 0</h3>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 shadow-md flex flex-col justify-between">
+                <div>
+                    <span class="text-xs font-medium text-gray-400 flex items-center gap-1.5">
+                        <i class="fa-solid fa-hourglass-half text-amber-400"></i> Estimasi Waktu Saldo Habis
+                    </span>
+                    <h3 id="val-prediksi-waktu" class="text-xl font-bold text-amber-400 mt-1">Menghitung...</h3>
+                </div>
+                <p id="val-prediksi-detail" class="text-[11px] text-gray-400 mt-2">Berdasarkan pola beban saat ini</p>
+            </div>
+
+            <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 shadow-md flex flex-col justify-between">
+                <div>
+                    <span class="text-xs font-medium text-gray-400 flex items-center gap-1.5">
+                        <i class="fa-solid fa-lightbulb text-yellow-400"></i> Rekomendasi Hemat AI
+                    </span>
+                    <h3 id="val-rekomendasi-title" class="text-sm font-bold text-emerald-400 mt-1">Penggunaan Efisien</h3>
+                </div>
+                <p id="val-rekomendasi-desc" class="text-xs text-gray-300 mt-2 leading-relaxed">Menganalisis pola konsumsi...</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-gray-800 p-5 rounded-2xl border border-gray-700 shadow-xl flex justify-between items-center">
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-200 flex items-center gap-2">
+                        <i class="fa-solid fa-power-off text-red-400"></i> Kontrol Relay Listrik Remote
+                    </h3>
+                    <p class="text-xs text-gray-400 mt-1">Sakelar Utama Blynk (Pin V5)</p>
+                </div>
+                <button id="btn-relay" onclick="toggleRelay()" class="px-6 py-2.5 rounded-xl font-bold text-sm bg-gray-600 text-white transition-all shadow-lg flex items-center gap-2">
+                    <i id="relay-icon" class="fa-solid fa-spinner fa-spin"></i> <span id="relay-text">SYNCING...</span>
+                </button>
+            </div>
+
+            <div class="bg-gray-800 p-5 rounded-2xl border border-gray-700 shadow-xl flex justify-between items-center">
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-200 flex items-center gap-2">
+                        <i class="fa-solid fa-wallet text-emerald-400"></i> Kelola Saldo kWh
+                    </h3>
+                    <p class="text-xs text-gray-400 mt-1">Isi ulang (V20) atau reset saldo (V21)</p>
+                </div>
+                <div class="flex items-center gap-2 justify-end">
+                    <input type="number" id="input-rp" placeholder="Rp Token" class="w-24 bg-gray-900 border border-gray-700 text-white text-xs p-2 rounded-lg text-center outline-none focus:border-blue-500">
+                    <button onclick="topUpToken()" class="px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs rounded-lg transition-all shadow">
+                        Beli
+                    </button>
+                    <button onclick="resetSaldo()" class="px-3 py-2 bg-red-600/80 hover:bg-red-500 text-white font-semibold text-xs rounded-lg transition-all shadow flex items-center gap-1" title="Reset saldo ke 0 kWh">
+                        <i class="fa-solid fa-rotate-left"></i> Reset
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2 bg-gray-800 p-5 rounded-2xl border border-gray-700 shadow-xl">
+                <h2 class="text-sm font-semibold text-gray-300 mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-chart-line text-blue-400"></i> Grafik Konsumsi Daya & Energi Real-Time
+                </h2>
+                <div class="relative h-64 md:h-80">
+                    <canvas id="powerChart"></canvas>
+                </div>
+            </div>
+
+            <div class="bg-gray-800 p-5 rounded-2xl border border-gray-700 shadow-xl flex flex-col justify-between">
+                <div>
+                    <h2 class="text-sm font-semibold text-gray-300 mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-brain text-purple-400"></i> Analisis Decision Engine AI
+                    </h2>
+                    
+                    <div id="ai-box" class="p-5 rounded-xl bg-gray-900 border border-gray-700 transition-all duration-300">
+                        <span class="text-xs text-gray-400 block mb-1">Status Keputusan Flowchart:</span>
+                        <h4 id="ai-title" class="text-lg font-bold text-emerald-400">[TIDAK] NORMAL</h4>
+                        <p id="ai-desc" class="text-xs text-gray-300 mt-2 leading-relaxed">
+                            Penggunaan daya stabil dan berada dalam batas aman standar 1300W.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="border-t border-gray-700 pt-4 mt-4 text-xs text-gray-500 flex justify-between items-center">
+                    <span>Terakhir Diperbarui:</span>
+                    <span id="last-update" class="font-mono text-gray-400">-</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbyEnfF3ox7IFBOLHMIUjHs5zegdHJ0RrKQYmHkhIpRzDMCIILNkeAK-DRRhYu-5RZAJ/exec";
+        const BLYNK_AUTH_TOKEN = "ekKKJEneccZppphiGxd19_NXNng_aK4B"; 
+        
+        const RELAY_VPIN = "V5";   
+        const TOPUP_VPIN = "V20";  
+        const RESET_VPIN = "V21";
+
+        let powerChart;
+        let isRelayOn = true;
+        let isRelayBusy = false;
+        let audioCtx = null;
+
+        function playAlarmSound() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.4);
+        }
+
+        function initChart() {
+            const ctx = document.getElementById('powerChart').getContext('2d');
+            powerChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        { label: 'Daya Real-Time (W)', data: [], borderColor: '#60a5fa', backgroundColor: 'rgba(96, 165, 250, 0.1)', fill: true, tension: 0.3, borderWidth: 2, yAxisID: 'y' },
+                        { label: 'Energi Sesi (kWh)', data: [], borderColor: '#22d3ee', borderDash: [2, 2], pointRadius: 2, borderWidth: 1.5, yAxisID: 'y1' },
+                        { label: 'Batas Overload (1300W)', data: [], borderColor: '#ef4444', borderDash: [5, 5], pointRadius: 0, borderWidth: 1.5, yAxisID: 'y' }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { ticks: { color: '#9ca3af', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                        y: { type: 'linear', position: 'left', ticks: { color: '#9ca3af' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                        y1: { 
+                            type: 'linear', 
+                            position: 'right', 
+                            min: 0, 
+                            ticks: { color: '#22d3ee' }, 
+                            grid: { drawOnChartArea: false } 
+                        }
+                    },
+                    plugins: { legend: { labels: { color: '#d1d5db' } } }
+                }
+            });
+        }
+
+        async function syncRelayStatus() {
+            if (isRelayBusy) return;
+            try {
+                const res = await fetch(`https://blynk.cloud/external/api/get?token=${BLYNK_AUTH_TOKEN}&${RELAY_VPIN}`);
+                const val = await res.text();
+                isRelayOn = (parseInt(val.trim()) === 1);
+                updateRelayUI();
+            } catch (e) {
+                console.warn("Gagal sinkronisasi status relay:", e);
+            }
+        }
+
+        function updateRelayUI() {
+            const btn = document.getElementById('btn-relay');
+            const icon = document.getElementById('relay-icon');
+            const text = document.getElementById('relay-text');
+
+            if (isRelayOn) {
+                btn.className = "px-6 py-2.5 rounded-xl font-bold text-sm bg-emerald-600 hover:bg-emerald-500 text-white transition-all shadow-lg flex items-center gap-2";
+                icon.className = "fa-solid fa-power-off";
+                text.innerText = "ON";
+            } else {
+                btn.className = "px-6 py-2.5 rounded-xl font-bold text-sm bg-red-600 hover:bg-red-500 text-white transition-all shadow-lg flex items-center gap-2";
+                icon.className = "fa-solid fa-power-off";
+                text.innerText = "OFF";
+            }
+        }
+
+        async function toggleRelay() {
+            if (isRelayBusy) return;
+            isRelayBusy = true;
+
+            const targetState = isRelayOn ? 0 : 1;
+            const btn = document.getElementById('btn-relay');
+            const icon = document.getElementById('relay-icon');
+            const text = document.getElementById('relay-text');
+
+            icon.className = "fa-solid fa-spinner fa-spin";
+            text.innerText = "PROSES...";
+
+            try {
+                await fetch(`https://blynk.cloud/external/api/update?token=${BLYNK_AUTH_TOKEN}&${RELAY_VPIN}=${targetState}`, { mode: 'no-cors' });
+                isRelayOn = (targetState === 1);
+            } catch(e) {
+                alert("Gagal memperbarui status Relay Blynk!");
+            } finally {
+                isRelayBusy = false;
+                updateRelayUI();
+                setTimeout(syncRelayStatus, 1000);
+            }
+        }
+
+        async function topUpToken() {
+            const rpVal = document.getElementById('input-rp').value;
+            if (!rpVal || rpVal <= 0) return alert("Masukkan nominal Rupiah yang valid!");
+
+            try {
+                await fetch(`https://blynk.cloud/external/api/update?token=${BLYNK_AUTH_TOKEN}&${TOPUP_VPIN}=${rpVal}`, { mode: 'no-cors' });
+                
+                alert(`Top-up Rp ${parseInt(rpVal).toLocaleString('id-ID')} Berhasil Dikirim ke Perangkat!`);
+                document.getElementById('input-rp').value = "";
+                setTimeout(updateDashboard, 1500);
+            } catch(e) {
+                alert("Gagal melakukan proses Top-Up!");
+            }
+        }
+
+        async function resetSaldo() {
+            if (!confirm("Apakah Anda yakin ingin mengosongkan (reset) sisa saldo kWh menjadi 0?")) return;
+
+            try {
+                await fetch(`${GAS_URL}?action=reset`);
+                await fetch(`https://blynk.cloud/external/api/update?token=${BLYNK_AUTH_TOKEN}&${RESET_VPIN}=1`, { mode: 'no-cors' });
+
+                alert("Saldo kWh berhasil di-reset menjadi 0.0000 kWh!");
+                setTimeout(updateDashboard, 1000);
+            } catch(e) {
+                alert("Gagal mereset saldo!");
+            }
+        }
+
+        async function updateDashboard() {
+            try {
+                const response = await fetch(GAS_URL);
+                const data = await response.json();
+
+                if (!data || data.length === 0 || data.error) return;
+
+                const last = data[data.length - 1];
+                const lastTime = new Date(last.waktuFull).getTime();
+                const nowTime = new Date().getTime();
+                const devStatusEl = document.getElementById('device-status');
+                const badge = document.getElementById('status-badge');
+                
+                // 1. Status Device Online / Offline
+                if ((nowTime - lastTime) < 15000) {
+                    devStatusEl.className = "px-3.5 py-1.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5";
+                    devStatusEl.innerHTML = `<i class="fa-solid fa-circle text-emerald-400 text-[10px] animate-pulse"></i> Device Online`;
+                } else {
+                    devStatusEl.className = "px-3.5 py-1.5 rounded-full text-xs font-semibold bg-red-500/20 text-red-400 border border-red-500/30 flex items-center gap-1.5";
+                    devStatusEl.innerHTML = `<i class="fa-solid fa-circle text-red-400 text-[10px]"></i> Device Offline`;
+                }
+
+                // 2. Format Pembacaan Tegangan (Fallback ke 220V jika daya terdeteksi tetapi sensor tegangan 0V)
+                const voltageVal = (last.voltage && last.voltage > 0) ? last.voltage.toFixed(0) : (last.power > 0 ? 220 : 0);
+                const currentVal = last.current ? last.current.toFixed(2) : "0.00";
+
+                const energiSesiTerpakai = Math.max(0, last.energy || 0);
+
+                document.getElementById('val-power').innerText = `${last.power.toFixed(1)} W`;
+                document.getElementById('val-energy').innerText = `${energiSesiTerpakai.toFixed(4)} kWh`;
+                document.getElementById('val-saldo').innerText = `${last.saldoAktual.toFixed(4)} kWh`;
+                document.getElementById('val-vi').innerText = `${voltageVal}V / ${currentVal}A`;
+
+                // 3. Estimasi Biaya 30 Hari
+                const recentData = data.slice(-10);
+                const avgPower = recentData.reduce((sum, d) => sum + d.power, 0) / recentData.length;
+                const estBiaya = ((avgPower * 720) / 1000) * 1444.7;
+                document.getElementById('val-biaya').innerText = `Rp ${Math.round(estBiaya).toLocaleString('id-ID')}`;
+
+                // 4. Estimasi Waktu Saldo Habis
+                const currentPower = last.power;
+                const currentSaldo = last.saldoAktual;
+
+                if (currentPower > 5 && currentSaldo > 0) {
+                    const kwhPerHour = currentPower / 1000;
+                    const hoursLeft = currentSaldo / kwhPerHour;
+                    const days = Math.floor(hoursLeft / 24);
+                    const hours = Math.floor(hoursLeft % 24);
+
+                    if (days > 0) {
+                        document.getElementById('val-prediksi-waktu').innerText = `~ ${days} Hari ${hours} Jam`;
+                    } else {
+                        document.getElementById('val-prediksi-waktu').innerText = `~ ${hours} Jam Lagi`;
+                    }
+                    document.getElementById('val-prediksi-detail').innerText = `Diestimasi pada beban konstan ${currentPower.toFixed(0)}W`;
+                } else if (currentPower <= 5 && currentSaldo > 0) {
+                    document.getElementById('val-prediksi-waktu').innerText = "Sangat Lama";
+                    document.getElementById('val-prediksi-detail').innerText = "Beban mendekati 0W (Mode Standby)";
+                } else {
+                    document.getElementById('val-prediksi-waktu').innerText = "Saldo Habis!";
+                    document.getElementById('val-prediksi-detail').innerText = "Segera lakukan isi ulang token kWh";
+                }
+
+                // 5. Evaluasi Anomali & Decision Engine AI (Sinkron 100%)
+                const recTitle = document.getElementById('val-rekomendasi-title');
+                const recDesc = document.getElementById('val-rekomendasi-desc');
+                const title = document.getElementById('ai-title');
+                const desc = document.getElementById('ai-desc');
+                const box = document.getElementById('ai-box');
+
+                const isOverload = last.power > 1300;
+                const isStandbyBoros = (last.power > 15 && last.power < 60);
+
+                if (isOverload) {
+                    badge.className = "px-3.5 py-1.5 rounded-full text-xs font-semibold bg-red-500/20 text-red-400 border border-red-500/30";
+                    badge.innerText = "[YA] OVERLOAD";
+
+                    recTitle.className = "text-sm font-bold text-red-400";
+                    recTitle.innerText = "Tindakan Darurat Overload!";
+                    recDesc.innerText = "Matikan salah satu perangkat berdaya besar untuk mencegah MCB jepret.";
+
+                    title.className = "text-lg font-bold text-red-400";
+                    title.innerText = "[YA] OVERLOAD DETECTED";
+                    box.className = "p-5 rounded-xl bg-red-950/30 border border-red-800/50";
+                    desc.innerText = "PERINGATAN: Daya melebihi 1300W! Berisiko merusak MCB dan alat.";
+
+                    playAlarmSound();
+                } else if (isStandbyBoros) {
+                    badge.className = "px-3.5 py-1.5 rounded-full text-xs font-semibold bg-yellow-500/20 text-yellow-400 border border-yellow-500/30";
+                    badge.innerText = "[YA] ANOMALI DETECTED";
+
+                    const potensiHemat = Math.round(((last.power * 24 * 30) / 1000) * 1444.7);
+                    recTitle.className = "text-sm font-bold text-yellow-400";
+                    recTitle.innerText = "Beban Standby Terdeteksi";
+                    recDesc.innerText = `Cabut steker/charger saat idle. Potensi hemat hingga Rp ${potensiHemat.toLocaleString('id-ID')}/bulan.`;
+
+                    title.className = "text-lg font-bold text-yellow-400";
+                    title.innerText = "[YA] TERDETEKSI ANOMALI";
+                    box.className = "p-5 rounded-xl bg-yellow-950/30 border border-yellow-800/50";
+                    desc.innerText = "PEMBOROSAN: Terdeteksi perangkat menyedot daya standby berlebih saat idle.";
+                } else {
+                    badge.className = "px-3.5 py-1.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
+                    badge.innerText = "[TIDAK] NORMAL";
+
+                    recTitle.className = "text-sm font-bold text-emerald-400";
+                    recTitle.innerText = "Penggunaan Optimal";
+                    recDesc.innerText = "Pola konsumsi energi stabil. Tidak terdeteksi pemborosan daya.";
+
+                    title.className = "text-lg font-bold text-emerald-400";
+                    title.innerText = "[TIDAK] KONDISI NORMAL";
+                    box.className = "p-5 rounded-xl bg-gray-900 border border-gray-700";
+                    desc.innerText = "Penggunaan daya listrik aman dan berada dalam ambang batas 1300W.";
+                }
+
+                // 6. Update Grafik Real-Time (Visualisasi 20 Data Terakhir)
+                const chartData = data.slice(-20);
+                powerChart.data.labels = chartData.map(d => d.waktu);
+                powerChart.data.datasets[0].data = chartData.map(d => d.power);
+                powerChart.data.datasets[1].data = chartData.map(d => Math.max(0, d.energy || 0));
+                powerChart.data.datasets[2].data = new Array(chartData.length).fill(1300);
+                powerChart.update();
+
+                document.getElementById('last-update').innerText = new Date().toLocaleTimeString('id-ID');
+
+            } catch (err) {
+                console.error("Gagal mengambil data:", err);
+            }
+        }
+
+        window.onload = () => {
+            initChart();
+            syncRelayStatus();
+            updateDashboard();
+            setInterval(updateDashboard, 2000); 
+            setInterval(syncRelayStatus, 2000); 
+        };
+    </script>
+</body>
+</html>
