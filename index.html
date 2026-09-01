@@ -71,7 +71,7 @@
             <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 shadow-md flex flex-col justify-between">
                 <div>
                     <span class="text-xs font-medium text-gray-400 flex items-center gap-1.5">
-                        <i class="fa-solid fa-lightbulb text-yellow-400"></i> Rekomendasi Hemat AI
+                        <i class="fa-solid fa-lightbulb text-yellow-400"></i> Status Sistem
                     </span>
                     <h3 id="val-rekomendasi-title" class="text-sm font-bold text-emerald-400 mt-1">Penggunaan Efisien</h3>
                 </div>
@@ -114,7 +114,7 @@
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div class="lg:col-span-2 bg-gray-800 p-5 rounded-2xl border border-gray-700 shadow-xl">
                 <h2 class="text-sm font-semibold text-gray-300 mb-4 flex items-center gap-2">
-                    <i class="fa-solid fa-chart-line text-blue-400"></i> Grafik Konsumsi Daya & Energi Real-Time
+                    <i class="fa-solid fa-chart-line text-blue-400"></i> Grafik Konsumsi Daya Real-Time
                 </h2>
                 <div class="relative h-64 md:h-80">
                     <canvas id="powerChart"></canvas>
@@ -177,26 +177,47 @@
                 data: {
                     labels: [],
                     datasets: [
-                        { label: 'Daya Real-Time (W)', data: [], borderColor: '#60a5fa', backgroundColor: 'rgba(96, 165, 250, 0.1)', fill: true, tension: 0.3, borderWidth: 2, yAxisID: 'y' },
-                        { label: 'Energi Sesi (kWh)', data: [], borderColor: '#22d3ee', borderDash: [2, 2], pointRadius: 2, borderWidth: 1.5, yAxisID: 'y1' },
-                        { label: 'Batas Overload (1300W)', data: [], borderColor: '#ef4444', borderDash: [5, 5], pointRadius: 0, borderWidth: 1.5, yAxisID: 'y' }
+                        { 
+                            label: 'Daya Real-Time (W)', 
+                            data: [], 
+                            borderColor: '#60a5fa', 
+                            backgroundColor: 'rgba(96, 165, 250, 0.15)', 
+                            fill: true, 
+                            tension: 0.3, 
+                            borderWidth: 2,
+                            pointRadius: 3
+                        },
+                        { 
+                            label: 'Batas Overload (1300W)', 
+                            data: [], 
+                            borderColor: '#ef4444', 
+                            borderDash: [5, 5], 
+                            pointRadius: 0, 
+                            borderWidth: 1.5 
+                        }
                     ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     scales: {
-                        x: { ticks: { color: '#9ca3af', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.05)' } },
-                        y: { type: 'linear', position: 'left', ticks: { color: '#9ca3af' }, grid: { color: 'rgba(255,255,255,0.05)' } },
-                        y1: { 
+                        x: { 
+                            ticks: { color: '#9ca3af', font: { size: 10 } }, 
+                            grid: { color: 'rgba(255,255,255,0.05)' } 
+                        },
+                        y: { 
                             type: 'linear', 
-                            position: 'right', 
-                            min: 0, 
-                            ticks: { color: '#22d3ee' }, 
-                            grid: { drawOnChartArea: false } 
+                            position: 'left', 
+                            min: 0,
+                            suggestedMax: 1400,
+                            ticks: { color: '#9ca3af' }, 
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            title: { display: true, text: 'Daya (Watt)', color: '#9ca3af', font: { size: 11 } }
                         }
                     },
-                    plugins: { legend: { labels: { color: '#d1d5db' } } }
+                    plugins: { 
+                        legend: { labels: { color: '#d1d5db' } } 
+                    }
                 }
             });
         }
@@ -304,15 +325,17 @@
                     devStatusEl.innerHTML = `<i class="fa-solid fa-circle text-red-400 text-[10px]"></i> Device Offline`;
                 }
 
-                // 2. Format Pembacaan Tegangan (Fallback ke 220V jika daya terdeteksi tetapi sensor tegangan 0V)
+                // 2. Format Pembacaan Tegangan
                 const voltageVal = (last.voltage && last.voltage > 0) ? last.voltage.toFixed(0) : (last.power > 0 ? 220 : 0);
                 const currentVal = last.current ? last.current.toFixed(2) : "0.00";
 
-                const energiSesiTerpakai = Math.max(0, last.energy || 0);
+                // Memaksa Tampilan Presisi 4 Desimal Dinamis (Tanpa Pembulatan Prematur)
+                const energiSesiTerpakai = Number(last.energy || 0);
+                const saldoAktual = Number(last.saldoAktual || 0);
 
                 document.getElementById('val-power').innerText = `${last.power.toFixed(1)} W`;
                 document.getElementById('val-energy').innerText = `${energiSesiTerpakai.toFixed(4)} kWh`;
-                document.getElementById('val-saldo').innerText = `${last.saldoAktual.toFixed(4)} kWh`;
+                document.getElementById('val-saldo').innerText = `${saldoAktual.toFixed(4)} kWh`;
                 document.getElementById('val-vi').innerText = `${voltageVal}V / ${currentVal}A`;
 
                 // 3. Estimasi Biaya 30 Hari
@@ -323,7 +346,7 @@
 
                 // 4. Estimasi Waktu Saldo Habis
                 const currentPower = last.power;
-                const currentSaldo = last.saldoAktual;
+                const currentSaldo = saldoAktual;
 
                 if (currentPower > 5 && currentSaldo > 0) {
                     const kwhPerHour = currentPower / 1000;
@@ -345,7 +368,7 @@
                     document.getElementById('val-prediksi-detail').innerText = "Segera lakukan isi ulang token kWh";
                 }
 
-                // 5. Evaluasi Anomali & Decision Engine AI (Sinkron 100%)
+                // 5. Evaluasi Decision Engine AI (Fokus Utama: Normal & Overload)
                 const recTitle = document.getElementById('val-rekomendasi-title');
                 const recDesc = document.getElementById('val-rekomendasi-desc');
                 const title = document.getElementById('ai-title');
@@ -353,7 +376,6 @@
                 const box = document.getElementById('ai-box');
 
                 const isOverload = last.power > 1300;
-                const isStandbyBoros = (last.power > 15 && last.power < 60);
 
                 if (isOverload) {
                     badge.className = "px-3.5 py-1.5 rounded-full text-xs font-semibold bg-red-500/20 text-red-400 border border-red-500/30";
@@ -369,26 +391,13 @@
                     desc.innerText = "PERINGATAN: Daya melebihi 1300W! Berisiko merusak MCB dan alat.";
 
                     playAlarmSound();
-                } else if (isStandbyBoros) {
-                    badge.className = "px-3.5 py-1.5 rounded-full text-xs font-semibold bg-yellow-500/20 text-yellow-400 border border-yellow-500/30";
-                    badge.innerText = "[YA] ANOMALI DETECTED";
-
-                    const potensiHemat = Math.round(((last.power * 24 * 30) / 1000) * 1444.7);
-                    recTitle.className = "text-sm font-bold text-yellow-400";
-                    recTitle.innerText = "Beban Standby Terdeteksi";
-                    recDesc.innerText = `Cabut steker/charger saat idle. Potensi hemat hingga Rp ${potensiHemat.toLocaleString('id-ID')}/bulan.`;
-
-                    title.className = "text-lg font-bold text-yellow-400";
-                    title.innerText = "[YA] TERDETEKSI ANOMALI";
-                    box.className = "p-5 rounded-xl bg-yellow-950/30 border border-yellow-800/50";
-                    desc.innerText = "PEMBOROSAN: Terdeteksi perangkat menyedot daya standby berlebih saat idle.";
                 } else {
                     badge.className = "px-3.5 py-1.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
                     badge.innerText = "[TIDAK] NORMAL";
 
                     recTitle.className = "text-sm font-bold text-emerald-400";
                     recTitle.innerText = "Penggunaan Optimal";
-                    recDesc.innerText = "Pola konsumsi energi stabil. Tidak terdeteksi pemborosan daya.";
+                    recDesc.innerText = "Pola konsumsi energi stabil. Tidak terdeteksi beban berlebih.";
 
                     title.className = "text-lg font-bold text-emerald-400";
                     title.innerText = "[TIDAK] KONDISI NORMAL";
@@ -396,12 +405,11 @@
                     desc.innerText = "Penggunaan daya listrik aman dan berada dalam ambang batas 1300W.";
                 }
 
-                // 6. Update Grafik Real-Time (Visualisasi 20 Data Terakhir)
+                // 6. Update Grafik Single-Axis (Memfokuskan Visualisasi Pada Daya Watt)
                 const chartData = data.slice(-20);
                 powerChart.data.labels = chartData.map(d => d.waktu);
                 powerChart.data.datasets[0].data = chartData.map(d => d.power);
-                powerChart.data.datasets[1].data = chartData.map(d => Math.max(0, d.energy || 0));
-                powerChart.data.datasets[2].data = new Array(chartData.length).fill(1300);
+                powerChart.data.datasets[1].data = new Array(chartData.length).fill(1300);
                 powerChart.update();
 
                 document.getElementById('last-update').innerText = new Date().toLocaleTimeString('id-ID');
